@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="rmd_can_test" type="rmd_can_test_node" name="rmd_can_test" output="screen"/>
+</launch>
