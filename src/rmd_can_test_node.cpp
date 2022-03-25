@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
-#include <fcntl.h>
+//#include <fcntl.h>
 //#include <pcan.h>
 #include "can_test/can.h"
 
@@ -8,7 +8,11 @@
 #include <time.h>
 
 //#include <fcntl.h>      // for pcan     O_RDWR
-#include <libpcan.h>    // for pcan library.
+//#include <libpcan.h>    // for pcan library.
+
+#include <signal.h>
+#include <iostream>
+using namespace std;
 
 
 /************xenomai**************/
@@ -57,6 +61,8 @@ void catch_signal(int sig);
 
 void can_task(void* arg);
 
+RMD rmd;
+
 
 int main(int argc, char **argv)
 {
@@ -64,6 +70,9 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   ros::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
+
+  signal(SIGINT, catch_signal);
+  signal(SIGTERM,catch_signal);
 
 
  // rt_task_create(&RT_task1,"CAN_tesk",0,90,0);
@@ -74,8 +83,11 @@ int main(int argc, char **argv)
 
   // CAN Setting
   printf(" Init CAN ...\n");
+  /*
   can_handle = LINUX_CAN_Open("/dev/pcan32", O_RDWR);
   CAN_Init(can_handle, CAN_BAUD_1M, CAN_INIT_TYPE_ST);
+  */
+
 
   ////can_handle1 = LINUX_CAN_Open("/dev/pcan33", O_RDWR);
   ////CAN_Init(can_handle1, CAN_BAUD_1M, CAN_INIT_TYPE_ST);
@@ -203,6 +215,7 @@ void can_task(void* arg) {
     int overrun_worst = 0;
     int lat_worst = 0;
 
+    rmd.RPM_control(MOT_1_ID, 400);
 
     while (can_run) {
 
@@ -210,9 +223,9 @@ void can_task(void* arg) {
         clock_gettime(CLOCK_MONOTONIC, &pre_time);
         //CAN_Write(can_handle, &can_QP_msg[0]);
 
-        LINUX_CAN_Read_Timeout(can_handle, &can_recv_msg[0],0);
+        //LINUX_CAN_Read_Timeout(can_handle, &can_recv_msg[0],0);
        // usleep(10);
-        printf("canstat:%d\n", CAN_Status(can_handle));
+        /*printf("canstat:%d\n", CAN_Status(can_handle));
         printf("Frame(Read) = %08lx %02x %02x %02x %02x %02x %02x %02x %02x," "Time Stamp = %u ms\n",
                 (unsigned long) can_recv_msg[0].Msg.ID,
                 can_recv_msg[0].Msg.DATA[0],
@@ -226,9 +239,13 @@ void can_task(void* arg) {
                 can_recv_msg[0].dwTime
                 );
 
-        int32_t RPM = 400;
-        int32_t speed = RPM*rpm2dsp*100;
+                */
+        //rmd.Read_RMD_Data();
+        int32_t RPM = 200;
+        rmd.RPM_control(MOT_1_ID, 400);
+        //int32_t speed = RPM*rpm2dsp*100;
 
+/*
         printf("[%d]\n",((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[7].Msg.DATA[3]);
         LINUX_CAN_Write_Timeout(can_handle, &can_QP_msg[0],0);
         can_QP_msg[0].MSGTYPE = MSGTYPE_STANDARD;
@@ -242,6 +259,7 @@ void can_task(void* arg) {
         can_QP_msg[0].DATA[5] = *((uint8_t*)(&speed)+1);//0x00;//0x11;
         can_QP_msg[0].DATA[6] = *((uint8_t*)(&speed)+2);//0x00;//0x00;
         can_QP_msg[0].DATA[7] = *((uint8_t*)(&speed)+3); //0x00;//0x00;
+        */
         //CAN_Write(can_handle, &can_QP_msg[0]);
  /*       printf("Frame(Write) = %08lx %02x %02x %02x %02x %02x %02x %02x %02x \n",
                 (unsigned long) can_recv_msg[0].Msg.ID,
@@ -276,7 +294,7 @@ void can_task(void* arg) {
           lat_worst = micro_timediff;
         }
 
-       // printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
+        printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
 
         //rt_task_wait_period(NULL);
 
@@ -284,15 +302,22 @@ void can_task(void* arg) {
 }
 
 void catch_signal(int sig) {
+ //signal(sig, SIG_IGN);
  printf("Program END...\n");
+ cout<<"program end"<<endl;
+ //char c;
+ //cin>>c;
+ //printf("%c",c);
 
  //FileSave();
- CAN_Close(can_handle);
+ //CAN_Close(rmd.can_handle);
+ rmd.close_CAN();
 
 // rt_task_delete(&RT_task1);
 //rt_task_delete(&RT_task2);
  rt_task_delete(&RT_task3);
 
+ printf("Program END...\n");
  ros::shutdown();
  exit(0);
 }

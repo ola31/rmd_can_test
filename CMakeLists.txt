@@ -155,7 +155,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
- add_executable(${PROJECT_NAME}_node src/rmd_can_test_node.cpp)
+ add_executable(${PROJECT_NAME}_node src/rmd_can_test_node.cpp src/rmd_can_driver.cpp)
  # add_executable(${PROJECT_NAME}_node1 src/rmd_can_driver.cpp)
 
 ## Rename C++ executable without prefix
