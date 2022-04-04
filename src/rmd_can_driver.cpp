@@ -14,7 +14,8 @@ RMD::~RMD(){
 }
 
 void RMD::close_CAN(){
-  CAN_Close(this->can_handle);
+  double result = CAN_Close(this->can_handle);
+  printf("can close result = %d \n",result);
 }
 
 void RMD::Motor_OFF(int motor_id){
@@ -91,7 +92,7 @@ void RMD::Motor_RUN(int motor_id){
   can_msg[0].DATA[6] = 0x00;
   can_msg[0].DATA[7] = 0x00;
 
-  LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],10);
+  LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],0);
 }
 
 void RMD::Position_Control_1(int motor_id, int position_degree){
@@ -118,7 +119,7 @@ void RMD::RPM_control(int moter_id, int32_t rpm){
 
   TPCANMsg can_msg[1];
   can_msg[0].LEN = 8;
-  can_msg[0].ID = 0x143;
+  can_msg[0].ID = moter_id;
   can_msg[0].DATA[0] = SPEED_CLOESED_LOOP_COMMAND;  //0xA2;
   can_msg[0].DATA[1] = 0x00;
   can_msg[0].DATA[2] = 0x00;
@@ -128,13 +129,14 @@ void RMD::RPM_control(int moter_id, int32_t rpm){
   can_msg[0].DATA[6] = *((uint8_t*)(&speed)+2);
   can_msg[0].DATA[7] = *((uint8_t*)(&speed)+3);
 
-  LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],10);
+  double result = LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],0);
+  printf("can_write[%lf]\n",result);
 }
 
 void RMD::Read_RMD_Data(){
 
   TPCANRdMsg can_recv_msg[1];
-  LINUX_CAN_Read_Timeout(this->can_handle, &can_recv_msg[0],10); //10 usec
+  LINUX_CAN_Read_Timeout(this->can_handle, &can_recv_msg[0],0); //10 usec
 
 
   printf("canstat:%d\n", CAN_Status(can_handle));

@@ -35,6 +35,7 @@ unsigned int cycle_ns = 1000000; //Control Cycle 1[ms]
 //Xenomai time variables
 RT_TASK RT_task1;
 RTIME now1, previous1; //Tread 1 cycle time
+double del_time1;
 double thread_time1 = 0.0; //Thread 1 cycle time
 double max_time = 0.0;
 
@@ -220,7 +221,10 @@ void can_task(void* arg) {
     while (can_run) {
 
         rt_task_wait_period(NULL);
-        clock_gettime(CLOCK_MONOTONIC, &pre_time);
+        //clock_gettime(CLOCK_MONOTONIC, &pre_time);
+        // for time check //
+        previous1 = rt_timer_read();
+
         //CAN_Write(can_handle, &can_QP_msg[0]);
 
         //LINUX_CAN_Read_Timeout(can_handle, &can_recv_msg[0],0);
@@ -240,9 +244,9 @@ void can_task(void* arg) {
                 );
 
                 */
-        rmd.Read_RMD_Data();
+        //rmd.Read_RMD_Data();
         int32_t RPM = 200;
-        rmd.RPM_control(MOT_1_ID, 400);
+        //rmd.RPM_control(MOT_1_ID, 400);
         //int32_t speed = RPM*rpm2dsp*100;
 
 /*
@@ -276,6 +280,7 @@ void can_task(void* arg) {
        // std::cout << "________________________" << std::endl;
 
         //get time diff
+        /*
         clock_gettime(CLOCK_MONOTONIC, &now_time);
         if ((now_time.tv_nsec - pre_time.tv_nsec) < 0) {
             diff_time.tv_sec = now_time.tv_sec - pre_time.tv_sec - 1;
@@ -293,6 +298,18 @@ void can_task(void* arg) {
         if(micro_timediff > lat_worst){
           lat_worst = micro_timediff;
         }
+        */
+        // for time check //
+        now1 = rt_timer_read();
+        del_time1 = (long) (now1 - previous1); /// 1000000;
+        if(del_time1 > max_time){
+          max_time = del_time1;
+        }
+        micro_timediff = del_time1/1000;
+        if(micro_timediff > cycle_ns/1000){
+          overrun_count++;
+        }
+        lat_worst = max_time/1000;
 
         printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
 
