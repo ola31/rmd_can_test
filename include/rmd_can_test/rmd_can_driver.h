@@ -42,6 +42,9 @@ public :
   RMD();
   RMD(char* can_port);
   ~RMD();
+
+  int Encoder_Data;
+
   void close_CAN();
   void Motor_OFF(int motor_id);
   void Motor_STOP(int motor_id);

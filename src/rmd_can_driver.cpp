@@ -130,7 +130,7 @@ void RMD::RPM_control(int moter_id, int32_t rpm){
   can_msg[0].DATA[7] = *((uint8_t*)(&speed)+3);
 
   double result = LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],0);
-  printf("can_write[%lf]\n",result);
+  ///printf("can_write[%lf]\n",result);
 }
 
 void RMD::Read_RMD_Data(){
@@ -139,20 +139,21 @@ void RMD::Read_RMD_Data(){
   LINUX_CAN_Read_Timeout(this->can_handle, &can_recv_msg[0],0); //10 usec
 
 
-  printf("canstat:%d\n", CAN_Status(can_handle));
-  printf("Frame(Read) = %08lx %02x %02x %02x %02x %02x %02x %02x %02x," "Time Stamp = %u ms\n",
-          (unsigned long) can_recv_msg[0].Msg.ID,
-          can_recv_msg[0].Msg.DATA[0],
-          can_recv_msg[0].Msg.DATA[1],
-          can_recv_msg[0].Msg.DATA[2],
-          can_recv_msg[0].Msg.DATA[3],
-          can_recv_msg[0].Msg.DATA[4],
-          can_recv_msg[0].Msg.DATA[5],
-          can_recv_msg[0].Msg.DATA[6],
-          can_recv_msg[0].Msg.DATA[7],
-          can_recv_msg[0].dwTime
-          );
-  printf("[%d]\n",((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[0].Msg.DATA[7]);
+  //printf("canstat:%d\n", CAN_Status(can_handle));
+  //printf("Frame(Read) = %08lx %02x %02x %02x %02x %02x %02x %02x %02x," "Time Stamp = %u ms\n",
+    //      (unsigned long) can_recv_msg[0].Msg.ID,
+    //      can_recv_msg[0].Msg.DATA[0],
+    //      can_recv_msg[0].Msg.DATA[1],
+    //      can_recv_msg[0].Msg.DATA[2],
+    //      can_recv_msg[0].Msg.DATA[3],
+    //      can_recv_msg[0].Msg.DATA[4],
+    //      can_recv_msg[0].Msg.DATA[5],
+    //      can_recv_msg[0].Msg.DATA[6],
+    //      can_recv_msg[0].Msg.DATA[7],
+    //      can_recv_msg[0].dwTime
+    //      );
+ /// printf("[%d]\n",((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[0].Msg.DATA[7]);
+  Encoder_Data = ((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[0].Msg.DATA[7];
 }
 
 //RMD::Position_Control(int moter_id, )

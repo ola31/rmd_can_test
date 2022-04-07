@@ -34,15 +34,26 @@ unsigned int cycle_ns = 1000000; //Control Cycle 1[ms]
 
 //Xenomai time variables
 RT_TASK RT_task1;
-RTIME now1, previous1; //Tread 1 cycle time
-double del_time1;
+RTIME now1, previous1, previous_before_sleep; //Tread 1 cycle time
+double del_time1,del_time2;
 double thread_time1 = 0.0; //Thread 1 cycle time
 double max_time = 0.0;
 
 
+int32_t micro_timediff = 0;
+int32_t thread_timediff = 0;
+
+int overrun_count = 0;
+int overrun_worst = 0;
+int lat_worst = 0;
+
+
+
 int can_run = 1;
+int print_run = 1;
 
 RT_TASK RT_task3;
+RT_TASK RT_task4;
 
 //CAN
 HANDLE can_handle = nullptr;
@@ -61,6 +72,7 @@ void catch_signal(int sig);
 
 
 void can_task(void* arg);
+void print_task(void* arg);
 
 RMD rmd;
 
@@ -96,28 +108,35 @@ int main(int argc, char **argv)
 
   //xenomai core setting?
   cpu_set_t cpu_can;
+  cpu_set_t print_can;
 
   CPU_ZERO(&cpu_can);
+  CPU_ZERO(&print_can);
 
+  CPU_SET(6 ,&print_can);
   CPU_SET(7 ,&cpu_can);
+
+/*
   CPU_CLR (0, &cpu_can);
   CPU_CLR (1, &cpu_can);
   CPU_CLR (2, &cpu_can);
   CPU_CLR (3, &cpu_can);
   CPU_CLR (4, &cpu_can);
   CPU_CLR (5, &cpu_can);
-  CPU_CLR (6, &cpu_can);
-
-
+*/
 
  // rt_task_create(&RT_task1, "Motion_task", 0, 99, 0);
  // rt_task_create(&RT_task2, "Print_task", 0, 80, 0);
   rt_task_create(&RT_task3, "CAN_task", 0, 99, 0);
-  int result = rt_task_set_affinity(&RT_task3, &cpu_can);
+  rt_task_set_affinity(&RT_task3, &cpu_can);
+
+  rt_task_create(&RT_task4, "PRINT_task", 0, 90, 0);
+  rt_task_set_affinity(&RT_task4, &print_can);
 
  // rt_task_start(&RT_task1, &motion_task, NULL);
  // rt_task_start(&RT_task2, &print_task, NULL);
   rt_task_start(&RT_task3, &can_task, NULL);
+  rt_task_start(&RT_task4, &print_task, NULL);
 
 
 
@@ -214,38 +233,27 @@ void can_task(void* arg) {
     //CAN_Write(can_handle, &can_QP_msg[0]);
     usleep(10);
 
-    static struct timespec pre_time;
-    static struct timespec now_time;
-
-    static struct timespec diff_time;
-    int32_t micro_timediff = 0;
-
-    int overrun_count = 0;
-    int overrun_worst = 0;
-    int lat_worst = 0;
 
     rmd.RPM_control(MOT_1_ID, 400);
 
 
 
-    RT_TASK *curtask;
-    RT_TASK_INFO curtaskinfo;
-
 
     while (can_run) {
+        previous_before_sleep = rt_timer_read();
 
         rt_task_wait_period(NULL);
         //clock_gettime(CLOCK_MONOTONIC, &pre_time);
         // for time check //
         previous1 = rt_timer_read();
 
-        curtask=rt_task_self();
-        rt_task_inquire(curtask,&curtaskinfo);
+      ///  curtask=rt_task_self();
+       /// rt_task_inquire(curtask,&curtaskinfo);
 
-        rt_printf("Task name : %s \n", curtaskinfo.name);
+       /// rt_printf("Task name : %s \n", curtaskinfo.name);
        // rt_printf("Task stat : %s \n", curtaskinfo.stat);
-        rt_printf("Task pid : %d \n", curtaskinfo.pid);
-        rt_printf("Task prio : %d \n", curtaskinfo.prio);
+       /// rt_printf("Task pid : %d \n", curtaskinfo.pid);
+       /// rt_printf("Task prio : %d \n", curtaskinfo.prio);
 
         //CAN_Write(can_handle, &can_QP_msg[0]);
 
@@ -298,7 +306,7 @@ void can_task(void* arg) {
                 can_QP_msg[0].DATA[6],
                 can_QP_msg[0].DATA[7]
                 );*/
-        printf("---------------------------------------\n");
+        ///printf("---------------------------------------\n");
        // std::cout << "________________________" << std::endl;
 
         //get time diff
@@ -324,21 +332,45 @@ void can_task(void* arg) {
         // for time check //
         now1 = rt_timer_read();
         del_time1 = (long) (now1 - previous1); /// 1000000;
+        del_time2 = (long) (now1-previous_before_sleep);
         if(del_time1 > max_time){
           max_time = del_time1;
         }
         micro_timediff = del_time1/1000;
+        thread_timediff = del_time2/1000;
         if(micro_timediff > cycle_ns/1000){
           overrun_count++;
         }
         lat_worst = max_time/1000;
 
-        printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
+        //printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
 
         //rt_task_wait_period(NULL);
 
     }
 }
+
+
+
+void print_task(void* arg) {
+
+
+    rt_task_set_periodic(NULL, TM_NOW, 100*cycle_ns);  //100us period
+    //CAN_Write(can_handle, &can_QP_msg[0]);
+    usleep(10);
+
+
+    while (print_run){
+        rt_task_wait_period(NULL);
+
+        printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
+        printf("[%d]\n",rmd.Encoder_Data);
+        printf("Thread_DelT[%d]\n",thread_timediff);
+    }
+}
+
+
+
 
 void catch_signal(int sig) {
  //signal(sig, SIG_IGN);
