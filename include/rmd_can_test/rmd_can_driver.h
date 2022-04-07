@@ -7,7 +7,7 @@
 #include <fcntl.h>      // for pcan     O_RDWR
 #include <libpcan.h>    // for pcan library.
 #include <stdint.h>
-
+#include <can_test/can.h>
 
 #define DPS2RPM       0.166666
 #define RPM2DSP       6.0000024
@@ -34,14 +34,20 @@
 #define MOT_1_ID 0x142
 
 
-class RMD
+class RMD : public CAN
 {
 
 public :
 
-  RMD();
+  //RMD();
+  /*
   RMD(char* can_port);
-  ~RMD();
+  ~RMD();*/
+  RMD(string port_name_, bool is_virtual_CAN_) : CAN(port_name_, is_virtual_CAN_){
+    port_name = port_name_;
+    is_virtual_CAN = is_virtual_CAN_;
+  }
+  void initialize_RMD(bool is_socket_can, string port_name_);
   void close_CAN();
   void Motor_OFF(int motor_id);
   void Motor_STOP(int motor_id);

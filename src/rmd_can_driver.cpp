@@ -1,5 +1,8 @@
 #include "rmd_can_test/rmd_can_driver.h"
+#include <string.h>
 
+
+/*
 RMD::RMD(){
   can_handle = LINUX_CAN_Open("/dev/pcan32", O_RDWR);
   CAN_Init(can_handle, CAN_BAUD_1M, CAN_INIT_TYPE_ST);
@@ -12,6 +15,22 @@ RMD::RMD(char* can_port){
 RMD::~RMD(){
 
 }
+*/
+/*
+RMD::RMD(bool is_socket_can){
+  CAN can("vcan0",_Virtual);
+
+}
+*/
+
+
+
+void RMD::initialize_RMD(bool is_socket_can, string port_name_){
+  //this->port_name = port_name_;  //ex : can0
+  //this->is_virtual_CAN;
+  CAN_initialize(_1M);
+}
+
 
 void RMD::close_CAN(){
   double result = CAN_Close(this->can_handle);
@@ -116,7 +135,7 @@ void RMD::Position_Control_1(int motor_id, int position_degree){
 
 void RMD::RPM_control(int moter_id, int32_t rpm){
   int32_t speed = rpm * RPM2DSP * DEG2LSP; // 0.01 deg/sec = 1;
-
+/*
   TPCANMsg can_msg[1];
   can_msg[0].LEN = 8;
   can_msg[0].ID = moter_id;
@@ -131,10 +150,25 @@ void RMD::RPM_control(int moter_id, int32_t rpm){
 
   double result = LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],0);
   printf("can_write[%lf]\n",result);
+
+  */
+  struct can_frame send_frame1;
+  BYTE can_array1[8]={0};
+  set_can_frame(send_frame1,0x142,8,false);
+  can_array1[0] = SPEED_CLOESED_LOOP_COMMAND;  //0xA2;
+  can_array1[1] = 0x00;
+  can_array1[2] = 0x00;
+  can_array1[3] = 0x00;
+  can_array1[4] = *(uint8_t*)(&speed);
+  can_array1[5] = *((uint8_t*)(&speed)+1);
+  can_array1[6] = *((uint8_t*)(&speed)+2);
+  can_array1[7] = *((uint8_t*)(&speed)+3);
+  CAN_write(send_frame1, can_array1);
+
 }
 
 void RMD::Read_RMD_Data(){
-
+/*
   TPCANRdMsg can_recv_msg[1];
   LINUX_CAN_Read_Timeout(this->can_handle, &can_recv_msg[0],0); //10 usec
 
@@ -153,6 +187,11 @@ void RMD::Read_RMD_Data(){
           can_recv_msg[0].dwTime
           );
   printf("[%d]\n",((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[0].Msg.DATA[7]);
+*/
+  struct can_frame recv_frame;
+  CAN_read(recv_frame);
+  printf("[%d]\n",((uint16_t)recv_frame.data[6]<<8)+(uint16_t)recv_frame.data[7]);
+
 }
 
 //RMD::Position_Control(int moter_id, )

@@ -62,7 +62,7 @@ void catch_signal(int sig);
 
 void can_task(void* arg);
 
-RMD rmd;
+RMD rmd("can0",true);
 
 
 int main(int argc, char **argv)
@@ -84,6 +84,7 @@ int main(int argc, char **argv)
 
   // CAN Setting
   printf(" Init CAN ...\n");
+  rmd.initialize_RMD(true,"can0");
   /*
   can_handle = LINUX_CAN_Open("/dev/pcan32", O_RDWR);
   CAN_Init(can_handle, CAN_BAUD_1M, CAN_INIT_TYPE_ST);
@@ -95,10 +96,10 @@ int main(int argc, char **argv)
 
 
   //xenomai core setting?
-  cpu_set_t cpu_can;
-
-  CPU_ZERO(&cpu_can);
-  CPU_SET(0,&cpu_can);
+ cpu_set_t cpu_can;
+//
+ CPU_ZERO(&cpu_can);
+ CPU_SET(4,&cpu_can);  //use core 4
 
 
 
@@ -244,9 +245,9 @@ void can_task(void* arg) {
                 );
 
                 */
-        //rmd.Read_RMD_Data();
+        rmd.Read_RMD_Data();
         int32_t RPM = 200;
-        //rmd.RPM_control(MOT_1_ID, 400);
+        rmd.RPM_control(MOT_1_ID, 400);
         //int32_t speed = RPM*rpm2dsp*100;
 
 /*
