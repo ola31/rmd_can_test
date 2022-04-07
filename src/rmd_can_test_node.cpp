@@ -98,14 +98,22 @@ int main(int argc, char **argv)
   cpu_set_t cpu_can;
 
   CPU_ZERO(&cpu_can);
-  CPU_SET(3 ,&cpu_can);
+
+  CPU_SET(7 ,&cpu_can);
+  CPU_CLR (0, &cpu_can);
+  CPU_CLR (1, &cpu_can);
+  CPU_CLR (2, &cpu_can);
+  CPU_CLR (3, &cpu_can);
+  CPU_CLR (4, &cpu_can);
+  CPU_CLR (5, &cpu_can);
+  CPU_CLR (6, &cpu_can);
 
 
 
  // rt_task_create(&RT_task1, "Motion_task", 0, 99, 0);
  // rt_task_create(&RT_task2, "Print_task", 0, 80, 0);
   rt_task_create(&RT_task3, "CAN_task", 0, 99, 0);
-  rt_task_set_affinity(&RT_task3, &cpu_can);
+  int result = rt_task_set_affinity(&RT_task3, &cpu_can);
 
  // rt_task_start(&RT_task1, &motion_task, NULL);
  // rt_task_start(&RT_task2, &print_task, NULL);
@@ -218,12 +226,26 @@ void can_task(void* arg) {
 
     rmd.RPM_control(MOT_1_ID, 400);
 
+
+
+    RT_TASK *curtask;
+    RT_TASK_INFO curtaskinfo;
+
+
     while (can_run) {
 
         rt_task_wait_period(NULL);
         //clock_gettime(CLOCK_MONOTONIC, &pre_time);
         // for time check //
         previous1 = rt_timer_read();
+
+        curtask=rt_task_self();
+        rt_task_inquire(curtask,&curtaskinfo);
+
+        rt_printf("Task name : %s \n", curtaskinfo.name);
+       // rt_printf("Task stat : %s \n", curtaskinfo.stat);
+        rt_printf("Task pid : %d \n", curtaskinfo.pid);
+        rt_printf("Task prio : %d \n", curtaskinfo.prio);
 
         //CAN_Write(can_handle, &can_QP_msg[0]);
 
