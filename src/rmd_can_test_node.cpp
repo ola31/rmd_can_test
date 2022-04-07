@@ -40,9 +40,25 @@ double thread_time1 = 0.0; //Thread 1 cycle time
 double max_time = 0.0;
 
 
-int can_run = 1;
 
-RT_TASK RT_task3;
+
+int32_t micro_timediff = 0;
+
+int overrun_count = 0;
+int overrun_worst = 0;
+int lat_worst = 0;
+
+
+
+
+
+int can_run = 1;
+int print_run = 1;
+
+
+RT_TASK RT_task3;  //CAN tesk
+RT_TASK RT_task4;  //print task
+
 
 //CAN
 HANDLE can_handle = nullptr;
@@ -61,6 +77,7 @@ void catch_signal(int sig);
 
 
 void can_task(void* arg);
+void print_task(void* arg);
 
 RMD rmd("can0",true);
 
@@ -99,7 +116,12 @@ int main(int argc, char **argv)
  cpu_set_t cpu_can;
 //
  CPU_ZERO(&cpu_can);
- CPU_SET(7,&cpu_can);  //use core 4
+ CPU_SET(7,&cpu_can);  //use core 8
+
+ cpu_set_t cpu_print;
+
+ CPU_ZERO(&cpu_print);
+ CPU_SET(6,&cpu_print);  //use core 7
 
 
 
@@ -108,9 +130,13 @@ int main(int argc, char **argv)
   rt_task_create(&RT_task3, "CAN_task", 0, 99, 0);
   rt_task_set_affinity(&RT_task3, &cpu_can);
 
+  rt_task_create(&RT_task4, "Print_task", 0, 90, 0);
+  rt_task_set_affinity(&RT_task4, &cpu_can);
+
  // rt_task_start(&RT_task1, &motion_task, NULL);
  // rt_task_start(&RT_task2, &print_task, NULL);
   rt_task_start(&RT_task3, &can_task, NULL);
+  rt_task_start(&RT_task4, &print_task, NULL);
 
 
 
@@ -211,11 +237,7 @@ void can_task(void* arg) {
     static struct timespec now_time;
 
     static struct timespec diff_time;
-    int32_t micro_timediff = 0;
 
-    int overrun_count = 0;
-    int overrun_worst = 0;
-    int lat_worst = 0;
 
     rmd.RPM_control(MOT_1_ID, 400);
 
@@ -277,7 +299,7 @@ void can_task(void* arg) {
                 can_QP_msg[0].DATA[6],
                 can_QP_msg[0].DATA[7]
                 );*/
-        printf("---------------------------------------\n");
+        //printf("---------------------------------------\n");
        // std::cout << "________________________" << std::endl;
 
         //get time diff
@@ -312,8 +334,26 @@ void can_task(void* arg) {
         }
         lat_worst = max_time/1000;
 
-        printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
+       // printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
 
+        //rt_task_wait_period(NULL);
+
+    }
+}
+
+
+void print_task(void* arg) {
+  rt_task_set_periodic(NULL, TM_NOW, cycle_ns*100);  //100us period
+  //CAN_Write(can_handle, &can_QP_msg[0]);
+  usleep(10);
+
+    while (print_run) {
+
+        rt_task_wait_period(NULL);
+
+
+        printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
+        printf("[%d]\n",rmd.Encoder_Data);
         //rt_task_wait_period(NULL);
 
     }
@@ -334,6 +374,7 @@ void catch_signal(int sig) {
 // rt_task_delete(&RT_task1);
 //rt_task_delete(&RT_task2);
  rt_task_delete(&RT_task3);
+ rt_task_delete(&RT_task4);
 
  printf("Program END...\n");
  ros::shutdown();

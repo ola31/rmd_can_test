@@ -47,6 +47,10 @@ public :
     port_name = port_name_;
     is_virtual_CAN = is_virtual_CAN_;
   }
+
+
+  int Encoder_Data;
+
   void initialize_RMD(bool is_socket_can, string port_name_);
   void close_CAN();
   void Motor_OFF(int motor_id);

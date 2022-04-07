@@ -190,7 +190,8 @@ void RMD::Read_RMD_Data(){
 */
   struct can_frame recv_frame;
   CAN_read(recv_frame);
-  printf("[%d]\n",((uint16_t)recv_frame.data[6]<<8)+(uint16_t)recv_frame.data[7]);
+  Encoder_Data = ((uint16_t)recv_frame.data[6]<<8)+(uint16_t)recv_frame.data[7];
+  //printf("[%d]\n",((uint16_t)recv_frame.data[6]<<8)+(uint16_t)recv_frame.data[7]);
 
 }
 
