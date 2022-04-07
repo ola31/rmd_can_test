@@ -95,21 +95,23 @@ void RMD::Motor_RUN(int motor_id){
   LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],0);
 }
 
-void RMD::Position_Control_1(int motor_id, int position_degree){
+void RMD::Position_Control_1(int motor_id, double position_degree){
 
   int32_t position = DEG2LSP*position_degree;
 
   TPCANMsg can_msg[1];
   can_msg[0].LEN = 8;
-  can_msg[0].ID = 0x142; //
+  can_msg[0].ID = motor_id;//0x142;
   can_msg[0].DATA[0] = POSITION_CLOSED_LOOP_COMMAND_1; //0xA3
   can_msg[0].DATA[1] = 0x00;
   can_msg[0].DATA[2] = 0x00;
   can_msg[0].DATA[3] = 0x00;
   can_msg[0].DATA[4] = *(uint8_t*)(&position);
-  can_msg[0].DATA[5] = *(uint8_t*)(&position+1);
-  can_msg[0].DATA[6] = *(uint8_t*)(&position+2);
-  can_msg[0].DATA[7] = *(uint8_t*)(&position+3);
+  can_msg[0].DATA[5] = *((uint8_t*)(&position)+1);
+  can_msg[0].DATA[6] = *((uint8_t*)(&position)+2);
+  can_msg[0].DATA[7] = *((uint8_t*)(&position)+3);
+
+  LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],0);
 
 }
 
@@ -152,8 +154,8 @@ void RMD::Read_RMD_Data(){
     //      can_recv_msg[0].Msg.DATA[7],
     //      can_recv_msg[0].dwTime
     //      );
- /// printf("[%d]\n",((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[0].Msg.DATA[7]);
-  Encoder_Data = ((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[0].Msg.DATA[7];
+    /// printf("[%d]\n",((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[0].Msg.DATA[7]);
+   Encoder_Data = (uint16_t)can_recv_msg[0].Msg.DATA[6]+((uint16_t)can_recv_msg[0].Msg.DATA[7]<<8);
 }
 
 //RMD::Position_Control(int moter_id, )

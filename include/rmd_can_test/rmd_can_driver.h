@@ -16,9 +16,9 @@
 
 #define ENCODER_RANGE 65535      // 16bit encoder 0~65535
 #define DEG2ENC       182.0444   // 65536 / 360(deg)
-#define ENC2DEG       0.0005493  // 360 / 65536
-#define DEG2RAD       0.017453   // 180 / PI
-#define RAD2DEG       57.29578   // PI / 180
+#define ENC2DEG       0.005493  // 360 / 65536
+#define DEG2RAD       0.017453   // PI / 180
+#define RAD2DEG       57.29578   // 180 / PI
 
 #define MOTOR_OFF_COMMAND                                   0X80
 #define MOTOR_STOP_COMMAND                                  0X81
@@ -51,7 +51,7 @@ public :
   void Motor_RUN(int motor_id);
   void RPM_control(int moter_id, int32_t rpm);
   void Read_RMD_Data();
-  void Position_Control_1(int motor_id, int position_degree);
+  void Position_Control_1(int motor_id, double position_degree);
 
 private:
 
