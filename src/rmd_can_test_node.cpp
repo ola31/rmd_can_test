@@ -99,7 +99,7 @@ int main(int argc, char **argv)
  cpu_set_t cpu_can;
 //
  CPU_ZERO(&cpu_can);
- CPU_SET(4,&cpu_can);  //use core 4
+ CPU_SET(7,&cpu_can);  //use core 4
 
 
 
