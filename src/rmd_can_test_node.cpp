@@ -1,5 +1,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Float32.h"
+
 //#include <fcntl.h>
 //#include <pcan.h>
 #include "can_test/can.h"
@@ -77,6 +79,7 @@ double T = 5000; //5 sec
 double t = 0;
 
 double command_posi_g;
+double present_posi_g;
 
 
 int main(int argc, char **argv)
@@ -85,6 +88,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
 
   ros::Publisher chatter_pub = nh.advertise<std_msgs::String>("chatter", 1000);
+  ros::Publisher present_degree_pub = nh.advertise<std_msgs::Float32>("/present_degree", 1000);
 
   signal(SIGINT, catch_signal);
   signal(SIGTERM,catch_signal);
@@ -130,13 +134,16 @@ int main(int argc, char **argv)
   rt_task_start(&RT_task4, &print_task, NULL);
 
 
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(100);
   while (ros::ok())
   {
     std_msgs::String msg;
+    std_msgs::Float32 degree_msg;
     msg.data = "hello world";
+    degree_msg.data = present_posi_g*RAD2DEG;
 
     chatter_pub.publish(msg);
+    present_degree_pub.publish(degree_msg);
 
     ros::spinOnce();
 
@@ -187,14 +194,16 @@ void can_task(void* arg) {
     //rmd.RPM_control(MOT_1_ID, 400);
 
     rmd.RPM_control(MOT_1_ID, 0);
-    usleep(100);
+    usleep(500);
     rmd.Read_RMD_Data();
-    usleep(100);
+    usleep(500);
+
 
     rmd.RPM_control(MOT_1_ID, 0);
-    usleep(100);
+    usleep(500);
     rmd.Read_RMD_Data();
-    usleep(100);
+    usleep(500);
+
 
 
     double start_posi;
@@ -243,7 +252,8 @@ void can_task(void* arg) {
           rmd.Position_Control_1(MOT_1_ID,command_posi*RAD2DEG);
           //rmd.Position_Control_1(MOT_1_ID,0.0);
 
-          command_posi_g = command_posi;
+          command_posi_g = command_posi;  //global variable
+          present_posi_g = present_posi;  //global variable
 
           t +=dt;
 
