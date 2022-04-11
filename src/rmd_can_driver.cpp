@@ -31,7 +31,7 @@ void RMD::Motor_OFF(int motor_id){
 
   TPCANMsg can_msg[1];
   can_msg[0].LEN = 8;
-  can_msg[0].ID = 0x142; //
+  can_msg[0].ID = motor_id; //
   can_msg[0].DATA[0] = MOTOR_OFF_COMMAND; //0x80
   can_msg[0].DATA[1] = 0x00;
   can_msg[0].DATA[2] = 0x00;
@@ -42,6 +42,8 @@ void RMD::Motor_OFF(int motor_id){
   can_msg[0].DATA[7] = 0x00;
 
   LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],0);
+
+  std::cout<<"Motor_OFF...ID[0x"<<std::hex<<motor_id<<"]"<<std::endl;
 }
 
 
@@ -57,7 +59,7 @@ void RMD::Motor_STOP(int motor_id){
 
   TPCANMsg can_msg[1];
   can_msg[0].LEN = 8;
-  can_msg[0].ID = 0x142; //
+  can_msg[0].ID = motor_id; //
   can_msg[0].DATA[0] = MOTOR_STOP_COMMAND; //0x81
   can_msg[0].DATA[1] = 0x00;
   can_msg[0].DATA[2] = 0x00;
@@ -68,6 +70,8 @@ void RMD::Motor_STOP(int motor_id){
   can_msg[0].DATA[7] = 0x00;
 
   LINUX_CAN_Write_Timeout(this->can_handle, &can_msg[0],0);
+
+  std::cout<<"Motor_STOP...ID[0x"<<std::hex<<motor_id<<"]"<<std::endl;
 }
 
 void RMD::Motor_RUN(int motor_id){
@@ -82,7 +86,7 @@ void RMD::Motor_RUN(int motor_id){
 
   TPCANMsg can_msg[1];
   can_msg[0].LEN = 8;
-  can_msg[0].ID = 0x142; //
+  can_msg[0].ID = motor_id; //
   can_msg[0].DATA[0] = MOTOR_RUNNING_COMMAND; //0x88
   can_msg[0].DATA[1] = 0x00;
   can_msg[0].DATA[2] = 0x00;
@@ -116,12 +120,12 @@ void RMD::Position_Control_1(int motor_id, double position_degree){
 }
 
 
-void RMD::RPM_control(int moter_id, int32_t rpm){
+void RMD::RPM_control(int motor_id, int32_t rpm){
   int32_t speed = rpm * RPM2DSP * DEG2LSP; // 0.01 deg/sec = 1;
 
   TPCANMsg can_msg[1];
   can_msg[0].LEN = 8;
-  can_msg[0].ID = moter_id;
+  can_msg[0].ID = motor_id;
   can_msg[0].DATA[0] = SPEED_CLOESED_LOOP_COMMAND;  //0xA2;
   can_msg[0].DATA[1] = 0x00;
   can_msg[0].DATA[2] = 0x00;
@@ -155,7 +159,12 @@ void RMD::Read_RMD_Data(){
     //      can_recv_msg[0].dwTime
     //      );
     /// printf("[%d]\n",((uint16_t)can_recv_msg[0].Msg.DATA[6]<<8)+(uint16_t)can_recv_msg[0].Msg.DATA[7]);
-   Encoder_Data = (uint16_t)can_recv_msg[0].Msg.DATA[6]+((uint16_t)can_recv_msg[0].Msg.DATA[7]<<8);
+  if(can_recv_msg[0].Msg.ID == MOT_1_ID){
+    this->mot1.Encoder_Data = (uint16_t)can_recv_msg[0].Msg.DATA[6]+((uint16_t)can_recv_msg[0].Msg.DATA[7]<<8);
+  }
+  else if(can_recv_msg[0].Msg.ID == MOT_2_ID){
+   this->mot2.Encoder_Data = (uint16_t)can_recv_msg[0].Msg.DATA[6]+((uint16_t)can_recv_msg[0].Msg.DATA[7]<<8);
+  }
 }
 
 //RMD::Position_Control(int moter_id, )

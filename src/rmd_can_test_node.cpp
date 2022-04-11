@@ -78,8 +78,11 @@ double dt = 1;   //1 ms
 double T = 5000; //5 sec
 double t = 0;
 
-double command_posi_g;
-double present_posi_g;
+double command_posi1_g;
+double present_posi1_g;
+
+double command_posi2_g;
+double present_posi2_g;
 
 
 int main(int argc, char **argv)
@@ -140,7 +143,8 @@ int main(int argc, char **argv)
     std_msgs::String msg;
     std_msgs::Float32 degree_msg;
     msg.data = "hello world";
-    degree_msg.data = present_posi_g*RAD2DEG;
+    degree_msg.data = present_posi1_g*RAD2DEG;
+    //degree_msg.data = present_posi2_g*RAD2DEG;
 
     chatter_pub.publish(msg);
     present_degree_pub.publish(degree_msg);
@@ -193,32 +197,49 @@ void can_task(void* arg) {
 
     //rmd.RPM_control(MOT_1_ID, 400);
 
-    rmd.RPM_control(MOT_1_ID, 0);
-    usleep(500);
-    rmd.Read_RMD_Data();
-    usleep(500);
+    for(int i=0;i<30;i++){
+      rmd.RPM_control(MOT_1_ID, 0);
+      rmd.RPM_control(MOT_2_ID, 0);
+     // rmd.RPM_control(MOT_2_ID, 0);
+      usleep(500);
+      rmd.Read_RMD_Data();
+      rmd.Read_RMD_Data();
+    //  rmd.Read_RMD_Data();
+      usleep(500);
+    }
+    std::cout<<"just waiting"<<endl;
+    std::cout<<"just waiting"<<endl;
+    usleep(5000000);
 
-
-    rmd.RPM_control(MOT_1_ID, 0);
-    usleep(500);
-    rmd.Read_RMD_Data();
-    usleep(500);
-
-
-
+    /*
     double start_posi;
     double goal_posi;
     double goal_posi_1 = 0.0  *DEG2RAD;
     double goal_posi_2 = 6*360.0 *DEG2RAD;
     double present_posi = 0;  //radian
     double command_posi;
+    */
 
-    goal_posi = goal_posi_1;
-    present_posi = rmd.Encoder_Data* ENC2DEG*DEG2RAD;
-    start_posi = present_posi;
+
+    rmd.mot1.goal_posi_1 = 0.0  *DEG2RAD;
+    rmd.mot1.goal_posi_2 = 6*360.0 *DEG2RAD;
+
+    rmd.mot2.goal_posi_1 = 0.0  *DEG2RAD;
+    rmd.mot2.goal_posi_2 = 10*360.0 *DEG2RAD;
+
+
+    rmd.mot1.goal_posi = rmd.mot1.goal_posi_1;
+    rmd.mot2.goal_posi = rmd.mot2.goal_posi_1;
+
+    rmd.mot1.present_posi = rmd.mot1.Encoder_Data* ENC2DEG*DEG2RAD;
+    rmd.mot2.present_posi = rmd.mot2.Encoder_Data* ENC2DEG*DEG2RAD;
+
+    rmd.mot1.start_posi = rmd.mot1.present_posi;
+    rmd.mot2.start_posi = rmd.mot2.present_posi;
 
     rmd.RPM_control(MOT_1_ID, 0);
-    usleep(300);
+    rmd.RPM_control(MOT_2_ID, 0);
+    usleep(2000);
 
 
     while (can_run) {
@@ -240,34 +261,57 @@ void can_task(void* arg) {
 
 
         rmd.Read_RMD_Data();
+        rmd.Read_RMD_Data();
+
         ///int32_t RPM = 200;
         ///rmd.RPM_control(MOT_1_ID, 400);
 
         if(t<T){
 
-          present_posi = rmd.Encoder_Data * ENC2DEG * DEG2RAD;
+          rmd.mot1.present_posi = rmd.mot1.Encoder_Data * ENC2DEG * DEG2RAD;
+          rmd.mot2.present_posi = rmd.mot2.Encoder_Data * ENC2DEG * DEG2RAD;
           //command_posi = present_posi;
 
-          command_posi = start_posi+(goal_posi - start_posi)*0.5*(1.0-cos(PI*(t/T)));
-          rmd.Position_Control_1(MOT_1_ID,command_posi*RAD2DEG);
-          //rmd.Position_Control_1(MOT_1_ID,0.0);
+          rmd.mot1.command_posi = rmd.mot1.start_posi+(rmd.mot1.goal_posi - rmd.mot1.start_posi)*0.5*(1.0-cos(PI*(t/T)));
+          rmd.mot2.command_posi = rmd.mot2.start_posi+(rmd.mot2.goal_posi - rmd.mot2.start_posi)*0.5*(1.0-cos(PI*(t/T)));
 
-          command_posi_g = command_posi;  //global variable
-          present_posi_g = present_posi;  //global variable
+          rmd.Position_Control_1(MOT_1_ID,rmd.mot1.command_posi*RAD2DEG);
+          rmd.Position_Control_1(MOT_2_ID,rmd.mot2.command_posi*RAD2DEG);
+
+          ///
+          //rmd.RPM_control(MOT_1_ID, 200);
+          //rmd.RPM_control(MOT_2_ID, 200);
+          /// rmd.Position_Control_1(MOT_1_ID,0.0);
+
+          command_posi1_g = rmd.mot1.command_posi;  //global variable
+          present_posi1_g = rmd.mot1.present_posi;  //global variable
+
+          command_posi2_g = rmd.mot2.command_posi;  //global variable
+          present_posi2_g = rmd.mot2.present_posi;  //global variable
 
           t +=dt;
 
 
         }
-        else{
-          if(abs(goal_posi - goal_posi_1)<0.0001){
-            goal_posi = goal_posi_2;
-            start_posi = goal_posi_1;
+        else{  //switching goal position and t = 0
+          if(abs(rmd.mot1.goal_posi - rmd.mot1.goal_posi_1)<0.0001){
+            rmd.mot1.goal_posi = rmd.mot1.goal_posi_2;
+            rmd.mot1.start_posi = rmd.mot1.goal_posi_1;
 
           }
           else{
-            goal_posi = goal_posi_1;
-            start_posi = goal_posi_2;
+            rmd.mot1.goal_posi = rmd.mot1.goal_posi_1;
+            rmd.mot1.start_posi = rmd.mot1.goal_posi_2;
+
+          }
+          if(abs(rmd.mot2.goal_posi - rmd.mot2.goal_posi_1)<0.0001){
+            rmd.mot2.goal_posi = rmd.mot2.goal_posi_2;
+            rmd.mot2.start_posi = rmd.mot2.goal_posi_1;
+
+          }
+          else{
+            rmd.mot2.goal_posi = rmd.mot2.goal_posi_1;
+            rmd.mot2.start_posi = rmd.mot2.goal_posi_2;
 
           }
           //start_posi = present_posi;
@@ -309,9 +353,11 @@ void print_task(void* arg) {
         rt_task_wait_period(NULL);
 
         printf("## Start_time - End_time = [%d]micro_sec  \n## Overrun_count[%d], lat_worst[%d] \n", micro_timediff, overrun_count, lat_worst);
-        printf("[%f]\n",rmd.Encoder_Data*ENC2DEG);
+        printf("moter1_posi[%f]\n",rmd.mot1.Encoder_Data*ENC2DEG);
+        printf("moter2_posi[%f]\n",rmd.mot2.Encoder_Data*ENC2DEG);
         printf("Thread_DelT[%d]\n",thread_timediff);
-        printf("command_posi [%lf]\n",command_posi_g*RAD2DEG);
+        printf("command_posi_1 [%lf]\n",command_posi1_g*RAD2DEG);
+        printf("command_posi_2 [%lf]\n",command_posi2_g*RAD2DEG);
     }
 }
 
@@ -324,11 +370,23 @@ void catch_signal(int sig) {
  printf("Program END...\n");
  cout<<"program end"<<endl;
 
- rmd.close_CAN();
-
-
+ can_run = false;
  rt_task_delete(&RT_task3);
  rt_task_delete(&RT_task4);
+
+ rmd.Motor_STOP(MOT_1_ID);
+ usleep(1000);
+ rmd.Motor_STOP(MOT_2_ID);
+ usleep(1000);
+
+ rmd.Motor_OFF(MOT_1_ID);
+ usleep(1000);
+ rmd.Motor_OFF(MOT_2_ID);
+ usleep(1000);
+
+ rmd.close_CAN();
+ usleep(1000);
+
 
  printf("Program END...\n");
  ros::shutdown();

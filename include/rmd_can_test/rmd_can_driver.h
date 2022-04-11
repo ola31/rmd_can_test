@@ -31,8 +31,20 @@
 #define MULTITURN_INTRIMENTAL_POSITION_CONTROL_COMMAND_1    0XA7
 #define MULTITURN_INTRIMENTAL_POSITION_CONTROL_COMMAND_2    0XA8
 
-#define MOT_1_ID 0x142
+#define MOT_1_ID 0x141
+#define MOT_2_ID 0x142
 
+
+struct MOTOR{
+  int Encoder_Data;
+  double start_posi;
+  double goal_posi;
+  double goal_posi_1 = 0.0  *DEG2RAD;
+  double goal_posi_2 = 6*360.0 *DEG2RAD;
+  double present_posi = 0;  //radian
+  double command_posi;
+};
+typedef MOTOR M;
 
 class RMD
 {
@@ -43,13 +55,13 @@ public :
   RMD(char* can_port);
   ~RMD();
 
-  int Encoder_Data;
+  M mot1,mot2;
 
   void close_CAN();
   void Motor_OFF(int motor_id);
   void Motor_STOP(int motor_id);
   void Motor_RUN(int motor_id);
-  void RPM_control(int moter_id, int32_t rpm);
+  void RPM_control(int motor_id, int32_t rpm);
   void Read_RMD_Data();
   void Position_Control_1(int motor_id, double position_degree);
 
